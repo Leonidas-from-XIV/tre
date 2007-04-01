@@ -70,9 +70,7 @@ libtre.regfree.restype = None
 libtre.regfree.argtypes = [regex_p]
 
 # regexec() functions
-# whereas the 4th argument should be an array there seems to be no 
-# possibility yet to create an array type with variable length fields
-libtre.regexec.argtypes = [regex_p, c_char_p, c_size_t, c_void_p, c_int]
+libtre.regexec.argtypes = [regex_p, c_char_p, c_size_t, POINTER(regmatch_t), c_int]
 
 # tre_version()
 libtre.tre_version.argtypes = []
@@ -109,7 +107,7 @@ class TREPattern(object):
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
         
-        result = libtre.regexec(self.preg, string, nmatch, byref(pmatch), 0)
+        result = libtre.regexec(self.preg, string, nmatch, pmatch, 0)
         if result != 0:
             raise Exception('Exec error, status %s' % result)
         
