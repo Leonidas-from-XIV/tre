@@ -13,7 +13,7 @@ does not count as external dependency anymore.
 # import important ctypes functions
 from ctypes import cdll, Structure, pointer, POINTER, byref, ARRAY
 # inport the built-in C datatypes
-from ctypes import c_int, c_size_t, c_void_p, c_char_p, c_wchar_p
+from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar_p
 
 # constants
 REG_NOMATCH = 1
@@ -71,6 +71,7 @@ libtre.regfree.argtypes = [regex_p]
 
 # regexec() functions
 libtre.regexec.argtypes = [regex_p, c_char_p, c_size_t, POINTER(regmatch_t), c_int]
+libtre.regnexec.argtypes = [regex_p, POINTER(c_char), c_size_t, c_size_t, POINTER(regmatch_t), c_int]
 
 # tre_version()
 libtre.tre_version.argtypes = []
@@ -107,7 +108,11 @@ class TREPattern(object):
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
         
-        result = libtre.regexec(self.preg, string, nmatch, pmatch, 0)
+        string_buffer = (c_char*len(string))()
+        string_buffer.raw = string
+        
+        result = libtre.regnexec(self.preg, string_buffer, len(string),
+                                 nmatch, pmatch, 0)
         if result != 0:
             raise Exception('Exec error, status %s' % result)
         
