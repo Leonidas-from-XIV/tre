@@ -14,6 +14,7 @@ does not count as external dependency anymore.
 from ctypes import cdll, Structure, pointer, POINTER, byref, ARRAY
 # inport the built-in C datatypes
 from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar_p
+from ctypes import c_wchar
 
 # constants
 REG_NOMATCH = 1
@@ -61,10 +62,9 @@ regmatch_p = POINTER(regmatch_t)
 
 # the regcomp() functions
 libtre.regcomp.argtypes = [regex_p, c_char_p, c_int]
-libtre.regcomp.restype = c_int
-libtre.regncomp.argtypes = [regex_p, c_char_p, c_size_t, c_int]
+libtre.regncomp.argtypes = [regex_p, POINTER(c_char), c_size_t, c_int]
 libtre.regwcomp.argtypes = [regex_p, c_wchar_p, c_int]
-libtre.regwncomp.argtypes = [regex_p, c_wchar_p, c_size_t, c_int]
+libtre.regwncomp.argtypes = [regex_p, POINTER(c_wchar), c_size_t, c_int]
 
 libtre.regfree.restype = None
 libtre.regfree.argtypes = [regex_p]
@@ -91,7 +91,11 @@ class TREPattern(object):
         # the real compiled regex - a regex_t instance
         self.preg = byref(regex_t())
         
-        result = libtre.regcomp(self.preg, pattern, REG_EXTENDED)
+        pattern_buffer = (c_char*len(pattern))()
+        pattern_buffer.raw = pattern
+        
+        result = libtre.regncomp(self.preg, pattern_buffer, len(pattern),
+                                 REG_EXTENDED)
         if result != 0:
             raise Exception('Parse error, code %s' % result)
         
