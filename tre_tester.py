@@ -17,7 +17,7 @@ offset = 0
 
 matches = []
 while True:
-    res = libtre.regexec(preg, tmp_str, nmatch, byref(pmatch), 0)
+    res = libtre.regexec(preg, tmp_str, nmatch, pmatch, 0)
     if res != 0:
         print 'Error in regexec', res
         break
