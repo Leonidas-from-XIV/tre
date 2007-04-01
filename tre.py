@@ -130,3 +130,4 @@ if __name__ == '__main__':
     # This can also be seen as a small self-test which shows whether
     # TRE can be called at all
     print libtre.tre_version()
+    
