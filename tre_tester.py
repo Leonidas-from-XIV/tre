@@ -8,7 +8,8 @@ from tre import *
 
 preg = byref(regex_t())
 
-print 'reg compile result:', libtre.regcomp(preg, r'a[0-9]a', 1)
+result = libtre.regcomp(preg, r'a[0-9]a', 1)
+print 'reg compile result:', reg_errcode_t[result]
 
 pmatch = (regmatch_t*5)()
 nmatch = c_size_t(5)
@@ -18,8 +19,8 @@ offset = 0
 matches = []
 while True:
     res = libtre.regexec(preg, tmp_str, nmatch, pmatch, 0)
-    if res != 0:
-        print 'Error in regexec', res
+    if reg_errcode_t[res] != 'REG_OK':
+        print 'Error in regexec', reg_errcode_t[res]
         break
 
     m = []
