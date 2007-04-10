@@ -21,8 +21,10 @@ assert m.group(0) == u'ä7ö'
 assert m.group(1) == u'7'
 
 #approx
-pattern = compile('abc([0-9])abc')
-m = pattern.approx('asdfabc5acbasdfsd', cost_subst=1,max_costs=10,max_subst=10, max=10)
-print m
-print m.groups(), m.group(0)
-print m.cost, m.num
+pattern = compile(u'abc([0-9])abc')
+m = pattern.approx(u'asdfabc5acbasdfsd', cost_subst=1,max_costs=10,max_subst=10, max=10)
+assert m is not None
+assert m.groups() == ('5',)
+assert m.group(0) == 'abc5acb'
+assert m.cost == 2
+assert m.num == (0, 0, 2)

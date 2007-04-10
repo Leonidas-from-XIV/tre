@@ -229,10 +229,16 @@ class TREPattern(object):
         amatch.nmatch = c_size_t(self.match_buffers)
         amatch.pmatch = pmatch
         
-        string_buffer = (c_char*len(string))()
-        string_buffer.raw = string
+        string_type = c_char
+        reg_function = libtre.reganexec
+        if type(string) == unicode:
+            string_type = c_wchar
+            reg_function = libtre.regawnexec
+        
+        string_buffer = (string_type*len(string))()
+        string_buffer.value = string
 
-        result = libtre.reganexec(self.preg, string_buffer, len(string),
+        result = reg_function(self.preg, string_buffer, len(string),
                                   byref(amatch), params, 0)
         
         if result != 0:
