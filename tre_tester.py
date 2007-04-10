@@ -6,39 +6,23 @@ Testing module for TRE
 
 from tre import *
 
-preg = byref(regex_t())
-
-print 'reg compile result:', libtre.regcomp(preg, r'a[0-9]a', 1)
-
-pmatch = (regmatch_t*5)()
-nmatch = c_size_t(5)
-test_st = tmp_str = 'bcda7aefga8ah'
-offset = 0
-
-matches = []
-while True:
-    res = libtre.regexec(preg, tmp_str, nmatch, pmatch, 0)
-    if res != 0:
-        print 'Error in regexec', res
-        break
-
-    m = []
-    for match in pmatch:
-        if match.rm_so != -1:
-            m.append((match.rm_so, match.rm_eo))
-    matches.append(m)
-
-    # search on after the match
-    tmp_str = tmp_str[match.rm_eo:]
-    offset += match.rm_eo
-
-print matches
-libtre.regfree(preg)
-for match in matches:
-    for start, end in match:
-        print test_st[start:end]
-
-# new API
-print 'Using high level API'
+#search
 pattern = compile('a([0-9])a')
-print pattern.findall('bcda7aefga8ah')
+m = pattern.search('bcda7aefga8ah')
+assert m.groups() == ('7',)
+assert m.group(0) == 'a7a'
+assert m.group(1) == '7'
+
+#unicode search
+pattern = compile(u'ä([0-9])ö')
+m = pattern.search(u'bcdä7öefga8ah')
+assert m.groups() == (u'7',)
+assert m.group(0) == u'ä7ö'
+assert m.group(1) == u'7'
+
+#approx
+pattern = compile('abc([0-9])abc')
+m = pattern.approx('asdfabc5acbasdfsd', cost_subst=1,max_costs=10,max_subst=10, max=10)
+print m
+print m.groups(), m.group(0)
+print m.cost, m.num
