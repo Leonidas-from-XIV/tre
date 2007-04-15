@@ -11,7 +11,7 @@ does not count as external dependency anymore.
 """
 
 # import important ctypes functions
-from ctypes import cdll, Structure, POINTER, byref
+from ctypes import cdll, Structure, POINTER, ARRAY, byref
 # import the built-in C datatypes
 from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar_p
 from ctypes import c_wchar
@@ -124,24 +124,78 @@ class regmatch_t(Structure):
 # same thing as needed for the regex_p type
 regmatch_p = POINTER(regmatch_t)
 
+class regaparams_t(Structure):
+    """
+        A regaparams_t structure
+        used for approximate matching functions
+    """
+
+    _fields_ = [
+        ('cost_ins', c_int),
+        ('cost_del', c_int),
+        ('cost_subst', c_int),
+        ('max_cost', c_int),
+        ('max_ins', c_int),
+        ('max_del', c_int),
+        ('max_subst', c_int),
+        ('max_err', c_int)
+               ]
+
+regaparams_p = POINTER(regaparams_t)
+
+class regamatch_t(Structure):
+    """
+        A regamatch_t structure
+        used for approximate matching functions
+    """
+   
+    _fields_ = [
+        ('nmatch',c_size_t),
+        ('pmatch', regmatch_p),
+        ('cost', c_int),
+        ('num_ins', c_int),
+        ('num_del', c_int),
+        ('num_subst', c_int)
+               ]
+    
+regamatch_p = POINTER(regamatch_t)
+
 # function definitions
 
 # the regcomp() functions
-libtre.regcomp.argtypes = [regex_p, c_char_p, c_int]
 libtre.regncomp.argtypes = [regex_p, POINTER(c_char), c_size_t, c_int]
-libtre.regwcomp.argtypes = [regex_p, c_wchar_p, c_int]
 libtre.regwncomp.argtypes = [regex_p, POINTER(c_wchar), c_size_t, c_int]
 
 libtre.regfree.restype = None
 libtre.regfree.argtypes = [regex_p]
 
 # regexec() functions
-libtre.regexec.argtypes = [regex_p, c_char_p, c_size_t, POINTER(regmatch_t), c_int]
 libtre.regnexec.argtypes = [regex_p, POINTER(c_char), c_size_t, c_size_t, POINTER(regmatch_t), c_int]
+libtre.regwnexec.argtypes = [regex_p, POINTER(c_wchar), c_size_t, c_size_t, POINTER(regmatch_t), c_int]
 
 # tre_version()
 libtre.tre_version.argtypes = []
 libtre.tre_version.restype = c_char_p
+
+# approximate matching functions
+libtre.reganexec.argtypes = [regex_p, POINTER(c_char), c_size_t,
+                             regamatch_p, regaparams_t, c_int]
+libtre.regawnexec.argtypes = [regex_p, POINTER(c_wchar), c_size_t,
+                              regamatch_p, regaparams_t, c_int]
+
+
+class Match(object):
+    def __init__(self, match, cost=None, num_ins=None, num_del=None, num_subst=None):
+        self.match = match
+        if cost is not None:
+            self.cost = cost
+            self.num = (num_ins, num_del, num_subst)
+    
+    def groups(self):
+        return self.match[1:]
+    
+    def group(self, index):
+        return self.match[index] 
 
 class TREPattern(object):
     """
@@ -157,11 +211,17 @@ class TREPattern(object):
         # the real compiled regex - a regex_t instance
         self.preg = byref(regex_t())
         
-        pattern_buffer = (c_char*len(pattern))()
-        pattern_buffer.raw = pattern
+        string_type = c_char
+        reg_function = libtre.regncomp
+        if type(pattern) == unicode:
+            string_type = c_wchar
+            reg_function = libtre.regwncomp
         
-        result = libtre.regncomp(self.preg, pattern_buffer, len(pattern),
-                                 REG_EXTENDED)
+        pattern_buffer = (string_type*len(pattern))()
+        pattern_buffer.value = pattern
+        
+        result = reg_function(self.preg, pattern_buffer, len(pattern),
+                              REG_EXTENDED)
         if reg_errcode_t[result] != 'REG_OK':
             raise Exception('Parse error, code %s' % result)
         
@@ -169,30 +229,99 @@ class TREPattern(object):
         # refer to the re_nsub field of the regex_t
         self.match_buffers = self.preg._obj.re_nsub + 1
 
-    def findall(self, string, pos=None, endpos=None):
+    def search(self, string, pos=None, endpos=None):
         """
-        Finds all non overlapping matches of...
-        pos and endpos are not implemented yet, just
-        provided to be compatible with sre
+        Finds the first match of the pattern
         """
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
         
-        string_buffer = (c_char*len(string))()
-        string_buffer.raw = string
+        if endpos:
+            string = string[:endpos]
+        if pos:
+            string = string[pos:]
         
-        result = libtre.regnexec(self.preg, string_buffer, len(string),
+        string_type = c_char
+        reg_function = libtre.regnexec
+        if type(string) == unicode:
+            string_type = c_wchar
+            reg_function = libtre.regwnexec
+        
+        string_buffer = (string_type*len(string))()
+        string_buffer.value = string
+        
+        result = reg_function(self.preg, string_buffer, len(string),
                                  nmatch, pmatch, 0)
-        if result != 0:
-            raise Exception('Exec error, status %s' % result)
+        
+        if reg_errcode_t[result] != 'REG_OK':
+            if result == REG_NOMATCH:
+                return None
+            else:
+                raise Exception('Exec error, status %s' % result)
         
         matches = list()
         for match in pmatch:
             match_offsets = (match.rm_so, match.rm_eo)
             chunk = string[match.rm_so:match.rm_eo]
             matches.append(chunk)
-        return matches
-            
+        return Match(tuple(matches))
+    
+    def approx(self, string, pos=None, endpos=None, cost_ins=0,
+               cost_del=0, cost_subst=0, max_costs=0,
+               max_ins=0, max_del=0, max_subst=0, max=0):
+        """
+            Like search but returns an approximate match
+        """
+        
+        if endpos:
+            string = string[:endpos]
+        if pos:
+            string = string[pos:]
+        
+        params = regaparams_t()
+        params.cost_ins = cost_ins
+        params.cost_del = cost_del
+        params.cost_subst = cost_subst
+        params.max_cost = max_costs
+        
+        params.max_ins = max_ins
+        params.max_del = max_del
+        params.max_subst = max_subst
+        params.max_err = max
+        
+        pmatch = (regmatch_t * self.match_buffers)()
+        
+        amatch = regamatch_t()
+        amatch.nmatch = c_size_t(self.match_buffers)
+        amatch.pmatch = pmatch
+        
+        string_type = c_char
+        reg_function = libtre.reganexec
+        if type(string) == unicode:
+            string_type = c_wchar
+            reg_function = libtre.regawnexec
+        
+        string_buffer = (string_type*len(string))()
+        string_buffer.value = string
+
+        result = reg_function(self.preg, string_buffer, len(string),
+                                  byref(amatch), params, 0)
+        
+        if reg_errcode_t[result] != 'REG_OK':
+            if result == REG_NOMATCH:
+                return None
+            else:
+                raise Exception('Exec error, status %s' % result)
+        
+        matches = list()
+        for match in pmatch:
+            chunk = string[match.rm_so:match.rm_eo]
+            matches.append(chunk)
+        return Match(tuple(matches), amatch.cost, amatch.num_ins,
+                     amatch.num_del, amatch.num_subst)
+    
+    def __del__(self):
+        libtre.regfree(self.preg)
 
 # convenient, isn't it?
 compile = TREPattern
