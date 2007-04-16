@@ -5,16 +5,15 @@ A module which creates a binding for the TRE regular expression engine.
 You can find the home page of TRE at http://laurikari.net/tre/
 
 Don't be surprised about many very easy and obvious documentation comments
-as this module is also intended as a documentation on how to wrap C 
+as this module is also intended as a documentation on how to wrap C
 libraries with ctypes. ctypes was put into the stdlib for Python 2.5 so it
 does not count as external dependency anymore.
 """
 
 # import important ctypes functions
-from ctypes import cdll, Structure, pointer, POINTER, byref, ARRAY
+from ctypes import cdll, Structure, POINTER, byref
 # inport the built-in C datatypes
-from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar_p
-from ctypes import c_wchar, ARRAY
+from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar
 
 # constants
 REG_NOMATCH = 1
@@ -82,7 +81,7 @@ class regamatch_t(Structure):
         A regamatch_t structure
         used for approximate matching functions
     """
-   
+
     _fields_ = [
         ('nmatch',c_size_t),
         ('pmatch', regmatch_p),
@@ -91,7 +90,7 @@ class regamatch_t(Structure):
         ('num_del', c_int),
         ('num_subst', c_int)
                ]
-    
+
 regamatch_p = POINTER(regamatch_t)
 
 # function definitions
@@ -124,12 +123,12 @@ class Match(object):
         if cost is not None:
             self.cost = cost
             self.num = (num_ins, num_del, num_subst)
-    
+
     def groups(self):
         return self.match[1:]
-    
+
     def group(self, index):
-        return self.match[index] 
+        return self.match[index]
 
 class TREPattern(object):
     """
@@ -144,21 +143,21 @@ class TREPattern(object):
         """
         # the real compiled regex - a regex_t instance
         self.preg = byref(regex_t())
-        
+
         string_type = c_char
         reg_function = libtre.regncomp
         if type(pattern) == unicode:
             string_type = c_wchar
             reg_function = libtre.regwncomp
-        
+
         pattern_buffer = (string_type*len(pattern))()
         pattern_buffer.value = pattern
-        
+
         result = reg_function(self.preg, pattern_buffer, len(pattern),
                               REG_EXTENDED)
         if result != 0:
             raise Exception('Parse error, code %s' % result)
-        
+
         # how much memory to reserve
         # refer to the re_nsub field of the regex_t
         self.match_buffers = self.preg._obj.re_nsub + 1
@@ -169,91 +168,91 @@ class TREPattern(object):
         """
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
-        
+
         if endpos:
             string = string[:endpos]
         if pos:
             string = string[pos:]
-        
+
         string_type = c_char
         reg_function = libtre.regnexec
         if type(string) == unicode:
             string_type = c_wchar
             reg_function = libtre.regwnexec
-        
+
         string_buffer = (string_type*len(string))()
         string_buffer.value = string
-        
+
         result = reg_function(self.preg, string_buffer, len(string),
                                  nmatch, pmatch, 0)
-        
+
         if result != 0:
             if result == REG_NOMATCH:
                 return None
             else:
                 raise Exception('Exec error, status %s' % result)
-        
+
         matches = list()
         for match in pmatch:
             match_offsets = (match.rm_so, match.rm_eo)
             chunk = string[match.rm_so:match.rm_eo]
             matches.append(chunk)
         return Match(tuple(matches))
-    
+
     def approx(self, string, pos=None, endpos=None, cost_ins=0,
                cost_del=0, cost_subst=0, max_costs=0,
                max_ins=0, max_del=0, max_subst=0, max=0):
         """
             Like search but returns an approximate match
         """
-        
+
         if endpos:
             string = string[:endpos]
         if pos:
             string = string[pos:]
-        
+
         params = regaparams_t()
         params.cost_ins = cost_ins
         params.cost_del = cost_del
         params.cost_subst = cost_subst
         params.max_cost = max_costs
-        
+
         params.max_ins = max_ins
         params.max_del = max_del
         params.max_subst = max_subst
         params.max_err = max
-        
+
         pmatch = (regmatch_t * self.match_buffers)()
-        
+
         amatch = regamatch_t()
         amatch.nmatch = c_size_t(self.match_buffers)
         amatch.pmatch = pmatch
-        
+
         string_type = c_char
         reg_function = libtre.reganexec
         if type(string) == unicode:
             string_type = c_wchar
             reg_function = libtre.regawnexec
-        
+
         string_buffer = (string_type*len(string))()
         string_buffer.value = string
 
         result = reg_function(self.preg, string_buffer, len(string),
                                   byref(amatch), params, 0)
-        
+
         if result != 0:
             if result == REG_NOMATCH:
                 return None
             else:
                 raise Exception('Exec error, status %s' % result)
-        
+
         matches = list()
         for match in pmatch:
             chunk = string[match.rm_so:match.rm_eo]
             matches.append(chunk)
         return Match(tuple(matches), amatch.cost, amatch.num_ins,
                      amatch.num_del, amatch.num_subst)
-    
+
     def __del__(self):
         libtre.regfree(self.preg)
 
@@ -266,4 +265,3 @@ if __name__ == '__main__':
     # This can also be seen as a small self-test which shows whether
     # TRE can be called at all
     print libtre.tre_version()
-    
