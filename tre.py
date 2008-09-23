@@ -15,12 +15,78 @@ from ctypes import cdll, Structure, POINTER, byref
 # inport the built-in C datatypes
 from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar
 
-# constants
-REG_NOMATCH = 1
+# the constants defined in TRE's regex.h
+# 
+# unfortunately, it is also possible that tre will use some of the
+# constants in the system's regex.h - this has to be handled in some smart
+# way. Further analyzing the system's regex.h is neccessary
+# 
+# not all of them are needed, it doesn't hurt to be as complete as possible
+
+# POSIX regcomp() flags
+# enable extended regular expressions - that's the default in tre.py
+# as opposed to TRE itself, which uses basic regular expressions
 REG_EXTENDED = 1
+# ignore case
+REG_ICASE = REG_EXTENDED << 1
+# special handling of newline character
+REG_NEWLINE = REG_ICASE << 1
+# do not report submatches. The submatch array won't be filled
+REG_NOSUB = REG_NEWLINE << 1
+
+# extra, nonstandard flags
+# basic regular expression - this is the default, anyway
+REG_BASIC = 0
+# all characters of the input string are considered ordinary
+REG_NOSPEC = REG_LITERAL = REG_NOSUB << 1
+# by default the concatenation is left associative in TRE
+REG_RIGHT_ASSOC = REG_LITERAL << 1
+REG_UNGREEDY = REG_RIGHT_ASSOC << 1
+
+# POSIX regexec() flags
+REG_NOTBOL = 1
+REG_NOTEOL = REG_NOTBOL << 1
+
+# extra regexec() flags
+REG_APPROX_MATCHER = 0x1000
+REG_BACKTRACKING_MATCHER = REG_APPROX_MATCHER << 1
+
+# error constants
+reg_errcode_t = [
+    # no error
+    'REG_OK',
+    # no match
+    'REG_NOMATCH',
+    # invalid regular expression
+    'REG_BADPAT',
+    # unknown collating element
+    'REG_ECOLLATE',
+    # unknown charater class name
+    'REG_ECTYPE',
+    # trailing backslash
+    'REG_EESCAPE',
+    # invalid back reference
+    'REG_ESUBREG',
+    # [ and ] parenthesis imbalance
+    'REG_EBRACK',
+    # ( and ) parenthesis imbalance
+    'REG_EPAREN',
+    # { and } parenthesis imbalance
+    'REG_EBRACE',
+    # invalid content of {}
+    'REG_BADBR',
+    # invalid use of range operator
+    'REG_ERANGE',
+    # out of memory
+    # when this occurs it's almost certain a bug in this file
+    'REG_ESPACE',
+    # invalid use of repetition operator
+    # according to the documentation TRE never returns this error code
+    'REG_BADRPT',
+]
 
 try:
-    # first try to import the library by it's unixish name
+    # first try to import the library by it's unixish soname
     libtre = cdll.LoadLibrary('libtre.so.4')
 except (WindowsError, OSError):
     # the unix lib is not available,
@@ -62,7 +128,6 @@ class regaparams_t(Structure):
         A regaparams_t structure
         used for approximate matching functions
     """
-
     _fields_ = [
         ('cost_ins', c_int),
         ('cost_del', c_int),
@@ -72,7 +137,7 @@ class regaparams_t(Structure):
         ('max_del', c_int),
         ('max_subst', c_int),
         ('max_err', c_int)
-               ]
+   ]
 
 regaparams_p = POINTER(regaparams_t)
 
@@ -81,7 +146,6 @@ class regamatch_t(Structure):
         A regamatch_t structure
         used for approximate matching functions
     """
-
     _fields_ = [
         ('nmatch',c_size_t),
         ('pmatch', regmatch_p),
@@ -89,7 +153,7 @@ class regamatch_t(Structure):
         ('num_ins', c_int),
         ('num_del', c_int),
         ('num_subst', c_int)
-               ]
+   ]
 
 regamatch_p = POINTER(regamatch_t)
 
@@ -152,10 +216,9 @@ class TREPattern(object):
 
         pattern_buffer = (string_type*len(pattern))()
         pattern_buffer.value = pattern
-
         result = reg_function(self.preg, pattern_buffer, len(pattern),
                               REG_EXTENDED)
-        if result != 0:
+        if reg_errcode_t[result] != 'REG_OK':
             raise Exception('Parse error, code %s' % result)
 
         # how much memory to reserve
@@ -168,7 +231,6 @@ class TREPattern(object):
         """
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
-
         if endpos:
             string = string[:endpos]
         if pos:
@@ -186,7 +248,7 @@ class TREPattern(object):
         result = reg_function(self.preg, string_buffer, len(string),
                                  nmatch, pmatch, 0)
 
-        if result != 0:
+        if reg_errcode_t[result] != 'REG_OK':
             if result == REG_NOMATCH:
                 return None
             else:
@@ -205,7 +267,6 @@ class TREPattern(object):
         """
             Like search but returns an approximate match
         """
-
         if endpos:
             string = string[:endpos]
         if pos:
@@ -216,31 +277,26 @@ class TREPattern(object):
         params.cost_del = cost_del
         params.cost_subst = cost_subst
         params.max_cost = max_costs
-
         params.max_ins = max_ins
         params.max_del = max_del
         params.max_subst = max_subst
         params.max_err = max
-
         pmatch = (regmatch_t * self.match_buffers)()
-
         amatch = regamatch_t()
         amatch.nmatch = c_size_t(self.match_buffers)
         amatch.pmatch = pmatch
-
         string_type = c_char
         reg_function = libtre.reganexec
         if type(string) == unicode:
             string_type = c_wchar
             reg_function = libtre.regawnexec
-
         string_buffer = (string_type*len(string))()
         string_buffer.value = string
 
         result = reg_function(self.preg, string_buffer, len(string),
                                   byref(amatch), params, 0)
 
-        if result != 0:
+        if reg_errcode_t[result] != 'REG_OK':
             if result == REG_NOMATCH:
                 return None
             else:
