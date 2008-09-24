@@ -184,7 +184,7 @@ libtre.reganexec.argtypes = [regex_p, POINTER(c_char), c_size_t,
 libtre.regawnexec.argtypes = [regex_p, POINTER(c_wchar), c_size_t,
                               regamatch_p, regaparams_t, c_int]
 
-def _get_specialization(string):
+def _get_specialized_exec(string):
     """Returns tuple of (string_type, reg_function) that is used
     to match the strings.
     This is because TRE can match both char and wchar and
@@ -256,11 +256,7 @@ class TREPattern(object):
         if pos:
             string = string[pos:]
 
-        string_type = c_char
-        reg_function = libtre.regnexec
-        if type(string) == unicode:
-            string_type = c_wchar
-            reg_function = libtre.regwnexec
+        string_type, reg_function = _get_specialized_exec(string)
 
         string_buffer = (string_type*len(string))()
         string_buffer.value = string
@@ -334,7 +330,7 @@ class TREPattern(object):
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
         # get the proper types and functions for the string
-        string_type, reg_function = _get_specialization(string)
+        string_type, reg_function = _get_specialized_exec(string)
 
         string_buffer = (string_type * len(string))()
         string_buffer.value = string
