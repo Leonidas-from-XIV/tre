@@ -184,15 +184,17 @@ libtre.reganexec.argtypes = [regex_p, POINTER(c_char), c_size_t,
 libtre.regawnexec.argtypes = [regex_p, POINTER(c_wchar), c_size_t,
                               regamatch_p, regaparams_t, c_int]
 
-def _get_specialized_exec(string):
+def _get_specialized(action, string):
     """Returns tuple of (string_type, reg_function) that is used
     to match the strings.
     This is because TRE can match both char and wchar and
-    we need to decide which to use."""
+    we need to decide which to use.
+    Action can be 'comp' for the compile functions or 'exec'
+    for the matching functions."""
     if isinstance(string, unicode):
-        return c_wchar, libtre.regwnexec
+        return c_wchar, getattr(libtre, 'regwn' + action)
     else:
-        return c_char, libtre.regnexec
+        return c_char, getattr(libtre, 'regn' + action)
 
 class Match(object):
     def __init__(self, match, cost=None, num_ins=None, num_del=None, num_subst=None):
@@ -216,12 +218,8 @@ class TREPattern(object):
         Note, the flags aren't yet implemented - REG_EXTENDED is used
         for everything instead.
         """
-        if isinstance(pattern, str):
-            string_type = c_char
-            reg_function = libtre.regncomp
-        elif isinstance(pattern, unicode):
-            string_type = c_wchar
-            reg_function = libtre.regwncomp
+        if isinstance(pattern, basestring):
+            string_type, reg_function = _get_specialized('comp', pattern)
         else:
             raise TypeError("first argument must be string or unicode")
 
@@ -256,7 +254,7 @@ class TREPattern(object):
         if pos:
             string = string[pos:]
 
-        string_type, reg_function = _get_specialized_exec(string)
+        string_type, reg_function = _get_specialized('exec', string)
 
         string_buffer = (string_type*len(string))()
         string_buffer.value = string
@@ -330,7 +328,7 @@ class TREPattern(object):
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
         # get the proper types and functions for the string
-        string_type, reg_function = _get_specialized_exec(string)
+        string_type, reg_function = _get_specialized('exec', string)
 
         string_buffer = (string_type * len(string))()
         string_buffer.value = string
