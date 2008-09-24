@@ -325,7 +325,9 @@ class TREPattern(object):
                      amatch.num_del, amatch.num_subst)
 
     def __del__(self):
-        libtre.regfree(self.preg)
+        """Free any allocated preg structures"""
+        if hasattr(self, 'preg'):
+            libtre.regfree(self.preg)
 
 # convenient, isn't it?
 compile = TREPattern
