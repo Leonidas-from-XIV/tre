@@ -14,6 +14,8 @@ does not count as external dependency anymore.
 from ctypes import cdll, Structure, POINTER, byref
 # inport the built-in C datatypes
 from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar
+# get the constants that are defined in sre_constants
+import sre_constants
 
 # the constants defined in TRE's regex.h
 # 
@@ -124,9 +126,11 @@ class regmatch_t(Structure):
 regmatch_p = POINTER(regmatch_t)
 
 class regaparams_t(Structure):
-    """
-        A regaparams_t structure
-        used for approximate matching functions
+    """A regaparams_t structure used for approximate matching
+    functions.
+
+    This class is internal and not part of the API and should
+    therefore not be used.
     """
     _fields_ = [
         ('cost_ins', c_int),
@@ -218,8 +222,14 @@ class TREPattern(object):
         pattern_buffer.value = pattern
         result = reg_function(self.preg, pattern_buffer, len(pattern),
                               REG_EXTENDED)
+
         if reg_errcode_t[result] != 'REG_OK':
-            raise Exception('Parse error, code %s' % result)
+            if reg_errcode_t[result] in ('REG_EBRACK', 'REG_EPAREN',
+                    'REG_EBRACE'):
+                raise sre_constants.error("unbalanced parenthesis")
+            else:
+                raise sre_constants.error('Parse error, symbol %s code %d' %
+                        (reg_errcode_t[result], result))
 
         # how much memory to reserve
         # refer to the re_nsub field of the regex_t
