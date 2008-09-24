@@ -209,16 +209,21 @@ class TREPattern(object):
         Note, the flags aren't yet implemented - REG_EXTENDED is used
         for everything instead.
         """
+        if isinstance(pattern, str):
+            string_type = c_char
+            reg_function = libtre.regncomp
+        elif isinstance(pattern, unicode):
+            string_type = c_wchar
+            reg_function = libtre.regwncomp
+        else:
+            # currently, compiled patterns are not supported, though
+            raise TypeError("first argument must be string, unicode or "
+                    "compiled pattern")
+
         # the real compiled regex - a regex_t instance
         self.preg = byref(regex_t())
 
-        string_type = c_char
-        reg_function = libtre.regncomp
-        if type(pattern) == unicode:
-            string_type = c_wchar
-            reg_function = libtre.regwncomp
-
-        pattern_buffer = (string_type*len(pattern))()
+        pattern_buffer = (string_type * len(pattern))()
         pattern_buffer.value = pattern
         result = reg_function(self.preg, pattern_buffer, len(pattern),
                               REG_EXTENDED)
