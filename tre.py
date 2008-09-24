@@ -199,9 +199,7 @@ class Match(object):
         return self.match[index]
 
 class TREPattern(object):
-    """
-    This class represents a compiled regular expression
-    """
+    """This class represents a compiled regular expression"""
     def __init__(self, pattern, flags=0):
         """
         Constructor - see, the signature is the same as of re.compile
@@ -216,9 +214,7 @@ class TREPattern(object):
             string_type = c_wchar
             reg_function = libtre.regwncomp
         else:
-            # currently, compiled patterns are not supported, though
-            raise TypeError("first argument must be string, unicode or "
-                    "compiled pattern")
+            raise TypeError("first argument must be string or unicode")
 
         # the real compiled regex - a regex_t instance
         self.preg = byref(regex_t())
@@ -329,8 +325,14 @@ class TREPattern(object):
         if hasattr(self, 'preg'):
             libtre.regfree(self.preg)
 
-# convenient, isn't it?
-compile = TREPattern
+def compile(*args, **kwargs):
+    """Returns a compiled pattern.
+    Compiled patterns passed to this function are
+    returned without changes"""
+    pattern = args[0]
+    if isinstance(pattern, TREPattern):
+        return pattern
+    return TREPattern(*args, **kwargs)
 
 if __name__ == '__main__':
     # this module is not meant to run stand-alone, so just display

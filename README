@@ -18,7 +18,7 @@ included in many distributions.
 
 Running ``tre.py`` directly will output the version of TRE, so you
 might want to run it to check whether it works. For a more detailed
-test, you can also run the unit tests, see the Testing_.
+test, you can also run the unit tests, see the testing_ chapter.
 
 ::
 
@@ -29,6 +29,9 @@ From here you can use TRE just as you would use the normal Python
 regular expression engine. You can use ``dir(tre)`` to look what
 this binding provides as well as you can call ``help()`` on the
 objects to get their on-line help.
+
+You can also take a look at the unit tests (see testing_) to see
+how things are done in TRE.
 
 -------
 Testing
@@ -48,7 +51,9 @@ issue the ``nosetests`` command::
 
 An output of ``OK`` shows that all tests passed and the binding is ready
 to use. Of course three tests is just the current state, more tests are
-planned.
+planned. It should also be mentioned that the binding may be usable already
+even if not all tests pass, since development snapshots are not guaranteed
+to pass all tests.
 
 --------------------------
 Building the documentation
@@ -61,7 +66,7 @@ package.
 
 To create the HTML version of this document::
 
-  $ rst2html readme.rst > readme.html
+  $ rst2html README > readme.html
 
 This will create a plain HTML file which can be viewed by any browser.
 
