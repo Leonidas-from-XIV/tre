@@ -4,10 +4,11 @@
 Testing module for TRE
 """
 
+from nose.tools import assert_raises
 import tre as re
 
 def test_search():
-    """Tests searching for matches in a bytestring"""
+    """Test searching for matches in a bytestring"""
     pattern = re.compile('a([0-9])a')
     m = pattern.search('bcda7aefga8ah')
     assert m.groups() == ('7',)
@@ -15,7 +16,7 @@ def test_search():
     assert m.group(1) == '7'
 
 def test_search_unicode():
-    """Tests searching for matches in a unicode string"""
+    """Test searching for matches in a unicode string"""
     pattern = re.compile(u'ä([0-9])ö')
     m = pattern.search(u'bcdä7öefga8ah')
     assert m.groups() == (u'7',)
@@ -31,3 +32,21 @@ def test_search_approx():
     assert m.group(0) == 'abc5acb'
     assert m.cost == 2
     assert m.num == (0, 0, 2)
+
+def test_finditer():
+    """Test whether finditer() returns the proper matches"""
+    pattern = re.compile('[0-9]')
+    results = pattern.finditer('d3t4 ru7e5!')
+    # check for each one and for the exception, not by using list(results)
+    assert results.next() == '3'
+    assert results.next() == '4'
+    assert results.next() == '7'
+    assert results.next() == '5'
+    assert_raises(StopIteration, results.next)
+
+def test_findall():
+    """Test whether findall() returns the proper list of matches"""
+    pattern = re.compile('[0-9]')
+    results = pattern.findall('d3t4 ru7e5!')
+    assert results == ['3', '4', '7', '5']
+

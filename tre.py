@@ -184,6 +184,15 @@ libtre.reganexec.argtypes = [regex_p, POINTER(c_char), c_size_t,
 libtre.regawnexec.argtypes = [regex_p, POINTER(c_wchar), c_size_t,
                               regamatch_p, regaparams_t, c_int]
 
+def _get_specialization(string):
+    """Returns tuple of (string_type, reg_function) that is used
+    to match the strings.
+    This is because TRE can match both char and wchar and
+    we need to decide which to use."""
+    if isinstance(string, unicode):
+        return c_wchar, libtre.regwnexec
+    else:
+        return c_char, libtre.regnexec
 
 class Match(object):
     def __init__(self, match, cost=None, num_ins=None, num_del=None, num_subst=None):
@@ -319,6 +328,37 @@ class TREPattern(object):
             matches.append(chunk)
         return Match(tuple(matches), amatch.cost, amatch.num_ins,
                      amatch.num_del, amatch.num_subst)
+
+    def finditer(self, string):
+        """Returns an iterator with all matches"""
+        pmatch = (regmatch_t * self.match_buffers)()
+        nmatch = c_size_t(self.match_buffers)
+        # get the proper types and functions for the string
+        string_type, reg_function = _get_specialization(string)
+
+        string_buffer = (string_type * len(string))()
+        string_buffer.value = string
+
+        # loop until no matches are found (REG_NOMATCH)
+        while True:
+            result = reg_function(self.preg, string_buffer, len(string),
+                    nmatch, pmatch, 0)
+
+            if reg_errcode_t[result] == 'REG_NOMATCH':
+                raise StopIteration
+            elif reg_errcode_t[result] != 'REG_OK':
+                raise sre_constants.error('Exec error')
+
+            for match in pmatch:
+                yield string[match.rm_so:match.rm_eo]
+                # move string offset
+                string = string[match.rm_eo:]
+                string_buffer = (string_type * len(string))()
+                string_buffer.value = string
+
+    def findall(self, string):
+        """Returns all matches in a list"""
+        return list(self.finditer(string))
 
     def __del__(self):
         """Free any allocated preg structures"""
