@@ -38,6 +38,21 @@ def test_search_approx():
     assert m.cost == 2
     assert m.num == (0, 0, 2)
 
+def test_match():
+    """Test matching"""
+    pattern = re.compile('zat')
+    m = pattern.match('zatazata')
+    assert m is not None
+    assert m.groups() == tuple()
+    assert m.group() == 'zat'
+    assert m.group(0) == 'zat'
+
+def test_match_nomatch():
+    """Test matching with strings that don't match"""
+    pattern = re.compile('a')
+    m = pattern.match('zzzzaaaa')
+    assert m is None
+
 def test_finditer():
     """Test whether finditer() returns the proper matches"""
     pattern = re.compile('[0-9]')

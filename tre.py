@@ -197,6 +197,14 @@ def _get_specialized(action, string):
     else:
         return c_char, getattr(libtre, 'regn' + action)
 
+def _slice_string(string, pos=None, endpos=None):
+    if endpos:
+        string = string[:endpos]
+    if pos:
+        string = string[pos:]
+    return string
+
+
 class Match(object):
     """A Match object that is returned as a result of a search"""
     def __init__(self, match, cost=None, num_ins=None, num_del=None,
@@ -247,16 +255,9 @@ class TREPattern(object):
         # refer to the re_nsub field of the regex_t
         self.match_buffers = self.preg._obj.re_nsub + 1
 
-    def search(self, string, pos=None, endpos=None):
-        """
-        Finds the first match of the pattern
-        """
+    def _exec(self, string):
         pmatch = (regmatch_t * self.match_buffers)()
         nmatch = c_size_t(self.match_buffers)
-        if endpos:
-            string = string[:endpos]
-        if pos:
-            string = string[pos:]
 
         string_type, reg_function = _get_specialized('exec', string)
 
@@ -272,11 +273,34 @@ class TREPattern(object):
             else:
                 raise Exception('Exec error, status %s' % result)
 
+        return pmatch
+
+    def search(self, string, pos=None, endpos=None):
+        """
+        Finds the first match of the pattern
+        """
+        string = _slice_string(string, pos, endpos)
+        pmatch = self._exec(string)
+        if pmatch is None:
+            return None
+
         matches = list()
         for match in pmatch:
-            match_offsets = (match.rm_so, match.rm_eo)
             chunk = string[match.rm_so:match.rm_eo]
             matches.append(chunk)
+        return Match(tuple(matches))
+
+    def match(self, string, pos=None, endpos=None):
+        string = _slice_string(string, pos, endpos)
+        pmatch = self._exec(string)
+        if pmatch is None:
+            return None
+
+        matches = list()
+        for match in pmatch:
+            chunk = string[match.rm_so:match.rm_eo]
+            matches.append(chunk)
+        print matches
         return Match(tuple(matches))
 
     def approx(self, string, pos=None, endpos=None, cost_ins=0,
@@ -375,6 +399,12 @@ def search(pattern, string):
     Flags are currently not supported"""
     pattern = compile(pattern)
     return pattern.search(string)
+
+def match(pattern, string):
+    """Match ``pattern`` in the ``string``.
+    Flags are currently not supported"""
+    pattern = compile(pattern)
+    return pattern.match(string)
 
 if __name__ == '__main__':
     # this module is not meant to run stand-alone, so just display
