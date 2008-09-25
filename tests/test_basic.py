@@ -15,6 +15,11 @@ def test_search():
     assert m.group(0) == 'a7a'
     assert m.group(1) == '7'
 
+def test_search_nomatch():
+    """Test whether a string with no match returns None"""
+    pattern = re.compile("Doesn't exist")
+    assert pattern.search('In this text') is None
+
 def test_search_unicode():
     """Test searching for matches in a unicode string"""
     pattern = re.compile(u'ä([0-9])ö')
@@ -50,3 +55,22 @@ def test_findall():
     results = pattern.findall('d3t4 ru7e5!')
     assert results == ['3', '4', '7', '5']
 
+def test_module_search():
+    """Tests whether tre.search() finds the same as a compiled regex"""
+    regex = r'a([0-9])a'
+    text = 'a3abda6ama7ada'
+    m1 = re.compile(regex).search(text)
+    m2 = re.search(regex, text)
+    assert m1.groups() == m2.groups()
+    assert m1.group(0) == m2.group(0)
+    assert m1.group(1) == m2.group(1)
+
+def test_module_match():
+    """Tests whether tre.match() finds the same as a compiled regex"""
+    regex = r'a([0-9])a'
+    text = 'a3abda6ama7ada'
+    m1 = re.compile(regex).match(text)
+    m2 = re.match(regex, text)
+    assert m1.groups() == m2.groups()
+    assert m1.group(0) == m2.group(0)
+    assert m1.group(1) == m2.group(1)

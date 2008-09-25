@@ -267,7 +267,7 @@ class TREPattern(object):
                                  nmatch, pmatch, 0)
 
         if reg_errcode_t[result] != 'REG_OK':
-            if result == REG_NOMATCH:
+            if reg_errcode_t[result] == 'REG_NOMATCH':
                 return None
             else:
                 raise Exception('Exec error, status %s' % result)
@@ -369,6 +369,12 @@ def compile(*args, **kwargs):
     if isinstance(pattern, TREPattern):
         return pattern
     return TREPattern(*args, **kwargs)
+
+def search(pattern, string):
+    """Searches ``pattern`` in the ``string``.
+    Flags are currently not supported"""
+    pattern = compile(pattern)
+    return pattern.search(string)
 
 if __name__ == '__main__':
     # this module is not meant to run stand-alone, so just display
