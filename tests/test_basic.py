@@ -47,6 +47,15 @@ def test_match():
     assert m.group() == 'zat'
     assert m.group(0) == 'zat'
 
+def test_match_groups():
+    pattern = re.compile('a([0-9])')
+    m = pattern.match('a4ra6')
+    assert m is not None
+    assert m.groups() == (4,)
+    assert m.group() == 'a4'
+    assert m.group(0) == 'a4'
+    assert m.group(1) == '4'
+
 def test_match_nomatch():
     """Test matching with strings that don't match"""
     pattern = re.compile('a')

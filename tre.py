@@ -218,7 +218,9 @@ class Match(object):
     def groups(self):
         return self.match[1:]
 
-    def group(self, index):
+    def group(self, index=None):
+        if index is None:
+            return ''.join(self.match)
         return self.match[index]
 
 class TREPattern(object):
@@ -298,10 +300,13 @@ class TREPattern(object):
 
         matches = list()
         for match in pmatch:
+            if match.rm_so != 0:
+                break
             chunk = string[match.rm_so:match.rm_eo]
             matches.append(chunk)
-        print matches
-        return Match(tuple(matches))
+
+        if matches:
+            return Match(tuple(matches))
 
     def approx(self, string, pos=None, endpos=None, cost_ins=0,
                cost_del=0, cost_subst=0, max_costs=0,
