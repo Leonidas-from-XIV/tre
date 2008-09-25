@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+"""Setup file for the library. This is only needed for installation"""
+
 try:
     from setuptools import setup
     setuptools = True
@@ -10,14 +12,28 @@ except ImportError:
 import tre
 
 fields = {
-    # beware, the name is not final
-    'name' : 'TRE',
+    'name' : 'mat-tre',
     # fails deliberately to stop people from uploading to the cheese shop
     'version' : tre.__version__,
-    'description' : 'Binding to the TRE regular expression engine',
+    'description' : ('Binding to the TRE regular expression engine '
+        'with approximate matching support'),
+    'long_description' = open('README').read(),
+    'license' : 'MIT',
     'author' : 'Marek Kubica',
     'author_email' : 'marek@xivilization.net',
-    'py_modules' : ['tre']
+    'py_modules' : ['tre'],
+    'keywords' : 'regex',
+    'classifiers' : [
+        'License :: OSI Approved :: MIT License',
+        'License :: DFSG Approved',
+        'Topic :: Text Processing :: General',
+        'Topic :: Text Processing :: Filters',
+        'Intended Audience :: Developers',
+        'Development Status :: 3 - Alpha',
+        'Programming Language :: Python',
+        'Operating System :: OS Independent',
+    ]
+
 }
 
 if setuptools:

@@ -1,9 +1,64 @@
-==============
-TRE for Python
-==============
+=======================
+Mat-TRE: TRE for Python
+=======================
 
-This project does not really have a name yet, but will provide a
-pure Python binding (via ctypes) to TRE_.
+Mat-TRE (Breton: *Mat-tre!*, for "*Very good!*") is a pure Python binding
+to the TRE_ regular expression library which provides, contrary to the
+regular expression engine bundled with Python.
+
+Another advantage of this binding is that it does not need any compilation 
+and is written completely in Python, which makes deployment and 
+installation easier and makes the whole library easier to understand
+and extend.
+
+This could be done because of the ctypes_ library which is shipped with
+Python 2.5 and is available to older Python versions separately.
+
+.. contents:: **Table of Contents**
+
+------------
+Installation
+------------
+
+The installation of the library is straightforward as it uses the
+standard Python tools for installing, ``distutils``. To install
+it from the source, change into the containing directory and call
+
+::
+
+  $ python setup.py install
+
+But ``mat-tre`` can also be installed from the Python Package Index
+using easy_install.
+
+::
+
+  $ easy_install mat-tre
+
+This installs the Python part of the binding, and the procedure is
+the same for every operating system. In case you don't have Python
+2.5 you still need ctypes - but keep in mind that Mat-TRE is developed
+on Python 2.5 so backwards compatibility is not guaranteed.
+
+To use the library you also need the TRE library for C, which is
+part of many distributions and can be installed on about any system,
+check your package manager or the `TRE download page`_. Note that
+you *don't* need the ``-dev`` or ``-devel`` package for Mat-TRE to
+work.
+
+Building the documentation
+==========================
+
+The documentation of this binding is written in reStructuredText_ and
+can be read in any text editor. Additionally, it can also be converted
+into a number of formats, including HTML, by installing the docutils_
+package.
+
+To create the HTML version of this document::
+
+  $ rst2html README > readme.html
+
+This will create a plain HTML file which can be viewed by any browser.
 
 -----
 Usage
@@ -55,21 +110,6 @@ planned. It should also be mentioned that the binding may be usable already
 even if not all tests pass, since development snapshots are not guaranteed
 to pass all tests.
 
---------------------------
-Building the documentation
---------------------------
-
-The documentation of this binding is written in reStructuredText_ and
-can be read in any text editor. Additionally, it can also be converted
-into a number of formats, including HTML, by installing the docutils_
-package.
-
-To create the HTML version of this document::
-
-  $ rst2html README > readme.html
-
-This will create a plain HTML file which can be viewed by any browser.
-
 ----------
 Contribute
 ----------
@@ -97,9 +137,8 @@ is::
 Now you have a whole copy of the repository and can work on it very much
 like with Subversion. For help with Mercurial_ see its home page.
 
-To send your changes upstream, either contact the autors to give you
-push privileges in the tre Repository or send the patches via mail;
-Mercurial contains a Patchbomb_ extension which can send these patches
+To send your changes upstream, send the patches via mail; Mercurial 
+bundles a Patchbomb_ extension which can send these patches
 automatically.
 
 .. _TRE: http://laurikari.net/tre/
@@ -110,3 +149,5 @@ automatically.
 .. _Patchbomb: http://www.selenic.com/mercurial/wiki/index.cgi/PatchbombExtension
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _docutils: http://docutils.sourceforge.net/
+.. _TRE download page: http://laurikari.net/tre/download.html
+.. _ctypes: http://starship.python.net/crew/theller/ctypes/
