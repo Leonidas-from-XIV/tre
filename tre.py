@@ -17,6 +17,9 @@ from ctypes import c_int, c_size_t, c_void_p, c_char, c_char_p, c_wchar
 # get the constants that are defined in sre_constants
 import sre_constants
 
+# version of the binding
+__version__ = '0.0.1'
+
 # the constants defined in TRE's regex.h
 # 
 # unfortunately, it is also possible that tre will use some of the
@@ -91,8 +94,7 @@ try:
     # first try to import the library by it's unixish soname
     libtre = cdll.LoadLibrary('libtre.so.4')
 except (WindowsError, OSError):
-    # the unix lib is not available,
-    # try the windows one
+    # the unix lib is not available, try the windows one
     libtre = cdll.LoadLibrary('tre4.dll')
 
 # create the custom types needed for TRE
@@ -146,9 +148,8 @@ class regaparams_t(Structure):
 regaparams_p = POINTER(regaparams_t)
 
 class regamatch_t(Structure):
-    """
-        A regamatch_t structure
-        used for approximate matching functions
+    """A regamatch_t structure used for approximate matching
+    functions
     """
     _fields_ = [
         ('nmatch',c_size_t),
@@ -197,7 +198,10 @@ def _get_specialized(action, string):
         return c_char, getattr(libtre, 'regn' + action)
 
 class Match(object):
-    def __init__(self, match, cost=None, num_ins=None, num_del=None, num_subst=None):
+    """A Match object that is returned as a result of a search"""
+    def __init__(self, match, cost=None, num_ins=None, num_del=None,
+            num_subst=None):
+
         self.match = match
         if cost is not None:
             self.cost = cost
@@ -278,9 +282,7 @@ class TREPattern(object):
     def approx(self, string, pos=None, endpos=None, cost_ins=0,
                cost_del=0, cost_subst=0, max_costs=0,
                max_ins=0, max_del=0, max_subst=0, max=0):
-        """
-            Like search but returns an approximate match
-        """
+        """Like search but returns an approximate match"""
         if endpos:
             string = string[:endpos]
         if pos:

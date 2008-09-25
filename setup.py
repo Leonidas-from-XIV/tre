@@ -13,16 +13,16 @@ import tre
 
 fields = {
     'name' : 'mat-tre',
-    # fails deliberately to stop people from uploading to the cheese shop
     'version' : tre.__version__,
     'description' : ('Binding to the TRE regular expression engine '
         'with approximate matching support'),
-    'long_description' = open('README').read(),
+    'long_description' : open('README').read(),
     'license' : 'MIT',
     'author' : 'Marek Kubica',
     'author_email' : 'marek@xivilization.net',
     'py_modules' : ['tre'],
     'keywords' : 'regex',
+    'platforms' : 'any',
     'classifiers' : [
         'License :: OSI Approved :: MIT License',
         'License :: DFSG Approved',
