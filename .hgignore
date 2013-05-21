@@ -1,5 +1,0 @@
-.*\.swp$
-.*\.py[c|o]$
-.*\.orig$
-.*\.html$
-build/
